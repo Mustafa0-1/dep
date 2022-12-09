@@ -1,11 +1,10 @@
 FROM python:3.10-slim
 
-ENV HOME=/home/app
-WORKDIR $HOME
-
+WORKDIR /code
 COPY requirements.txt .
-RUN python3 -m pip install -r requirements.txt
+RUN pip install -r requirements.txt
+COPY app.py .
+COPY migrations migrations
+COPY docker_config.py default_config.py
 
-COPY . .
-
-ENTRYPOINT ["sh", "entrypoint.sh"]
+CMD flask run -h 0.0.0.0 -p 80
