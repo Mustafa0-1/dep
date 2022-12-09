@@ -1,0 +1,33 @@
+name: Build and deploy workflow
+on: [push]
+jobs:
+  build_and_push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone code
+        uses: actions/checkout@v2
+      - name: docker build
+        run: docker build -t keysmustafa/skypro_mnysan_app:$GITHUB_REF_NAME-$GITHUB_RUN_UD .
+      - name: docker login
+        run: echo ${{ secrets.TOKEN_DOCKER }} | docker login -u ${{ secrets.USERNAME_DOCKER }} --password-stdin
+      - name: docker push
+        run: docker push keysmustafa/skypro_mnysan_app:$GITHUB_REF_NAME-$GITHUB_RUN_UD
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: clone code
+        uses: actions/checkout@v2
+      - name: render configa
+        run:
+          mkdir deploy
+          cat docker-compose-ci.yaml | envsubst > deploy/docker-compose.yaml
+          cat docker_ci_config.py | envsubst > deploy/docker_config.py
+      - name: copy files to server
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          source: "deploy/docker-compose.yaml,deploy/docker_config.py"
+          target: "flask_app_ci"
+          strip_components: 1
